@@ -1,7 +1,7 @@
 pub mod cambodia;
 
 use std::error::Error;
-use std::fs::File;
+use std::fs::{read_to_string, File};
 use std::io::{BufWriter, Write};
 
 use crate::{root, Htmlize, Page};
@@ -93,9 +93,17 @@ fn htmlize_boilerplate_header_and_navigation(
         .into_bytes(),
     )?;
     // "Middle block" - takes care of tricky variable navigation.
+    let name = slice_before_match_from_end_ci(page.name(), ".html");
     let components = path_str_to_components(page.path());
     let mut path_to_component = String::new();
     for component in components.iter() {
+        // The directories are structured such that every directory has a
+        // file named after it. When we are on that page, we don't want to
+        // show the directory name twice in our navigation, so we just skip it.
+        if component == name {
+            continue;
+        }
+
         path_to_component = path_to_component + component + "/";
         // With the exception of index.html at home, there is always a file named after
         // the folder that it is in which acts as the landing page for that folder.
@@ -110,9 +118,6 @@ fn htmlize_boilerplate_header_and_navigation(
         )?;
     }
     // "Last block" - takes care of the page we are currently on.
-    // This needs to have the ".html" removed from the name since we specify
-    // page names with the extension on creation.
-    let name = slice_before_match_from_end_ci(page.name(), ".html");
     output.write_all(
         &format!(
             r#"
@@ -368,6 +373,114 @@ impl Htmlize for TripDayFooter {
 pub struct TripDayContentSection {
     title: String,
     content: Vec<String>,
+}
+
+fn ends_with_tag(register: &String, tag: &str) -> bool {
+    if register.len() < tag.len() {
+        return false;
+    }
+
+    let i = register.len() - tag.len();
+
+    if &register[i..] == tag {
+        return true;
+    }
+
+    false
+}
+
+pub fn gen_from_bucket_html(path: &str) -> Result<Vec<Box<dyn Htmlize>>, Box<dyn Error>> {
+    #[derive(PartialEq)]
+    enum ParseMode {
+        Title,
+        SecTitle,
+        Text,
+        Image,
+        Searching,
+    }
+
+    let mut ret: Vec<Box<dyn Htmlize>> = vec![];
+
+    let mut mode = ParseMode::Searching;
+    let mut content = TripDayContentSection::new("", vec![]);
+    let file = read_to_string(path)?;
+    let mut register = String::new();
+    for c in file.chars() {
+        // We want to remove any newline or extra space characters from the file.
+        // This is just to help us get a consistent look in the generated files.
+        if c == '\n'
+            || c == '\r'
+            || c == '\t'
+            || (c == ' ' && register.chars().last().unwrap_or('x') == ' ')
+        {
+            continue;
+        }
+
+        register.push(c);
+
+        match mode {
+            ParseMode::Searching => {
+                if ends_with_tag(&register, "<h1>") {
+                    mode = ParseMode::Title;
+                } else if ends_with_tag(&register, "<h3>") {
+                    mode = ParseMode::SecTitle;
+                    // Push the previous content, if valid.
+                    if content.title != "" {
+                        ret.push(Box::new(content));
+                    }
+                    content = TripDayContentSection::new("", vec![]);
+                } else if ends_with_tag(&register, "<p>") {
+                    mode = ParseMode::Text;
+                } else if ends_with_tag(&register, "<img src=\"") {
+                    mode = ParseMode::Image;
+                }
+
+                if mode != ParseMode::Searching {
+                    register.clear();
+                }
+            }
+            ParseMode::Title => {
+                if ends_with_tag(&register, "</h1>") {
+                    ret.push(hdr(slice_before_match_from_end_ci(&register, "</h1>")));
+                    register.clear();
+                    mode = ParseMode::Searching;
+                }
+            }
+            ParseMode::SecTitle => {
+                if ends_with_tag(&register, "</h3>") {
+                    content.title = slice_before_match_from_end_ci(&register, "</h3>").to_string();
+                    register.clear();
+                    mode = ParseMode::Searching;
+                }
+            }
+            ParseMode::Text => {
+                if ends_with_tag(&register, "</p>") {
+                    content
+                        .content
+                        .push(slice_before_match_from_end_ci(&register, "</p>").to_string());
+                    register.clear();
+                    mode = ParseMode::Searching;
+                }
+            }
+            ParseMode::Image => {
+                if ends_with_tag(&register, "\">") {
+                    content
+                        .content
+                        .push(slice_before_match_from_end_ci(&register, "\">").to_string());
+                    register.clear();
+                    mode = ParseMode::Searching;
+                }
+            }
+        }
+    }
+
+    // After we finished the file, we will usually have a last valid content and a footer to add.
+    if content.title != "" {
+        ret.push(Box::new(content));
+    }
+    ret.push(ftr());
+
+    Ok(ret)
 }
 
 impl TripDayContentSection {
