@@ -1,11 +1,13 @@
-
 use std::error::Error;
-use std::fs::{File, OpenOptions, create_dir_all};
+use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::{BufWriter, Write};
 
 mod trip;
+use trip::cambodia::{
+    cambodia, phnom_penh_arrival, phnom_penh_day_2, siem_reap_arrival, siem_reap_day_2,
+    siem_reap_day_3, siem_reap_day_4,
+};
 use trip::{LocationPage, TripDayPage};
-use trip::cambodia::{cambodia, siem_reap_arrival};
 
 pub struct Config {}
 
@@ -66,14 +68,14 @@ impl Page {
         match self {
             Page::TripDay(p) => &p.path,
             Page::Location(p) => &p.path,
-            _ => ""
+            _ => "",
         }
     }
 
     fn resource_path(&self) -> &str {
         match self {
             Page::TripDay(p) => &p.resource_path,
-            _ => ""
+            _ => "",
         }
     }
 }
@@ -91,7 +93,16 @@ fn index() -> Result<(Page, Vec<Box<dyn Htmlize>>), Box<dyn Error>> {
 }
 
 fn gen() -> Result<(), Box<dyn Error>> {
-    let site = vec![index()?, cambodia()?, siem_reap_arrival()?];
+    let site = vec![
+        index()?,
+        cambodia()?,
+        siem_reap_arrival()?,
+        siem_reap_day_2()?,
+        siem_reap_day_3()?,
+        siem_reap_day_4()?,
+        phnom_penh_arrival()?,
+        phnom_penh_day_2()?,
+    ];
 
     for page in site {
         let mut writer = page.0.open()?;
