@@ -1,4 +1,4 @@
-pub mod cambodia;
+pub mod atw;
 
 use std::error::Error;
 use std::fs::{read_to_string, File};
@@ -137,6 +137,175 @@ fn htmlize_boilerplate_header_and_navigation(
 
     Ok(())
 }
+
+pub struct TripIndexPage {
+    pub name: String,
+    pub path: String,
+}
+
+impl TripIndexPage {
+    pub fn new(name: &str, path: &str) -> TripIndexPage {
+        TripIndexPage {
+            name: name.to_string(),
+            path: path.to_string(),
+        }
+    }
+}
+
+pub struct TripIndexHeader {}
+
+impl Htmlize for TripIndexHeader {
+    fn htmlize(&self, page: &Page, output: &mut BufWriter<File>) -> Result<(), Box<dyn Error>> {
+        htmlize_boilerplate_header_and_navigation(page, output)?;
+
+        output.write_all(
+            br#"
+        <div class="world-menu">"#,
+        )?;
+
+        Ok(())
+    }
+}
+
+pub struct TripIndexFooter {}
+
+impl Htmlize for TripIndexFooter {
+    fn htmlize(&self, page: &Page, output: &mut BufWriter<File>) -> Result<(), Box<dyn Error>> {
+        output.write_all(
+            br#"
+        </div>
+    </body>
+</html>"#,
+        )?;
+
+        Ok(())
+    }
+}
+
+pub struct TripIndexCard {
+    link: String,
+    title: String,
+    subtitle: String,
+    image: String,
+}
+
+pub struct TripIndexContent {
+    content: Vec<TripIndexCard>,
+}
+
+impl TripIndexContent {
+    pub fn new(content: Vec<(&str, &str, &str, &str)>) -> TripIndexContent {
+        TripIndexContent {
+            content: content
+                .iter()
+                .map(|s| TripIndexCard {
+                    link: s.0.to_string(),
+                    title: s.1.to_string(),
+                    subtitle: s.2.to_string(),
+                    image: s.3.to_string(),
+                })
+                .collect(),
+        }
+    }
+}
+
+impl Htmlize for TripIndexContent {
+    fn htmlize(&self, page: &Page, output: &mut BufWriter<File>) -> Result<(), Box<dyn Error>> {
+        for c in self.content.iter() {
+            let link = root() + page.path() + "/" + &c.link;
+            let image = root() + "from-bucket/" + &c.image;
+
+            output.write_all(
+                &format!(
+                    r#"
+        <a class="card-link" href="{}">
+            <div class="world-menu-card">
+                <img class="world-menu-card-image" src="{}" />
+                <div class="world-menu-text-box">
+                    <div class="world-menu-title">{}</div>
+                    <div class="world-menu-subtitle">{}</div>
+                </div>
+            </div>
+        </a>
+                    "#,
+                    link, image, &c.title, &c.subtitle
+                )
+                .into_bytes(),
+            )?;
+        }
+
+        Ok(())
+    }
+}
+
+// pub fn atw_index() -> Result<(Page, Vec<Box<dyn Htmlize>>), Box<dyn Error>> {
+//     Ok((
+//         Page::TripIndex(TripIndexPage::new("atw.html", "atw")),
+//         vec![
+//             ihdr(),
+//             icnt(vec![
+//                 (
+//                     "washington/washington.html",
+//                     "Washington",
+//                     "Grandma Fairchild, Elin",
+//                     "grandma/Hike_with_grandma.jpg",
+//                 ),
+//                 ("south_korea/south_korea.html", "South Korea", "Seoul", ""),
+//                 (
+//                     "vietname/vietnam.html",
+//                     "Vietnam",
+//                     "Hanoi, Ho Chi Minh City",
+//                     "",
+//                 ),
+//                 (
+//                     "cambodia/cambodia.html",
+//                     "Cambodia",
+//                     "Siem Reap, Phnom Penh",
+//                     "",
+//                 ),
+//                 (
+//                     "thailand/thailand.html",
+//                     "Thailand",
+//                     "Bangkok, Chiang Mai, Chiang Rai, Railay",
+//                     "",
+//                 ),
+//                 (
+//                     "england/england.html",
+//                     "England",
+//                     "London, Seaford, Bath, York, Malham",
+//                     "",
+//                 ),
+//                 ("ireland/ireland.html", "Ireland", "The Entire Island", ""),
+//                 (
+//                     "scotland/scotland.html",
+//                     "Scotland",
+//                     "Glasgow, Islay, Oban, Glencoe, Edinburgh",
+//                     "",
+//                 ),
+//                 ("portugal/portugal.html", "Portugal", "Porto, Lisbon", ""),
+//                 (
+//                     "spain/spain.html",
+//                     "Spain",
+//                     "Andalucia, Madrid, Barcelona",
+//                     "",
+//                 ),
+//                 (
+//                     "greece/greece.html",
+//                     "Greece",
+//                     "Athens, Hydra, Santorini, Paros",
+//                     "",
+//                 ),
+//                 (
+//                     "czech_republic/czech_republic.html",
+//                     "Czech Republic",
+//                     "Prague",
+//                     "",
+//                 ),
+//             ]),
+//             iftr(),
+//         ],
+//     ))
+// }
 
 pub struct LocationPage {
     pub name: String,
@@ -643,4 +812,13 @@ pub fn lftr() -> Box<LocationFooter> {
 }
 pub fn lcnt(content: Vec<(&str, &str, &str, &str)>) -> Box<LocationContent> {
     Box::new(LocationContent::new(content))
+}
+pub fn ihdr() -> Box<TripIndexHeader> {
+    Box::new(TripIndexHeader {})
+}
+pub fn iftr() -> Box<TripIndexFooter> {
+    Box::new(TripIndexFooter {})
+}
+pub fn icnt(content: Vec<(&str, &str, &str, &str)>) -> Box<TripIndexContent> {
+    Box::new(TripIndexContent::new(content))
 }
