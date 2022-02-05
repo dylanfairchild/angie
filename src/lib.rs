@@ -3,6 +3,7 @@ use std::fs::{create_dir_all, File, OpenOptions};
 use std::io::{BufWriter, Write};
 
 mod trip;
+use trip::atw::atw;
 // use trip::cambodia::{
 //     cambodia, phnom_penh_arrival, phnom_penh_day_2, siem_reap_arrival, siem_reap_day_2,
 //     siem_reap_day_3, siem_reap_day_4,
@@ -129,24 +130,24 @@ trait Htmlize {
 }
 
 fn index() -> Result<(Page, Vec<Box<dyn Htmlize>>), Box<dyn Error>> {
-    Ok((Page::Index, vec![]))
+    Ok((Page::new("index.html", "."), vec![]))
 }
 
 fn gen() -> Result<(), Box<dyn Error>> {
-    let site = vec![
+    let mut site = vec![
         index()?,
-        atw_index()?,
-        cambodia()?,
-        siem_reap_arrival()?,
-        siem_reap_day_2()?,
-        siem_reap_day_3()?,
-        siem_reap_day_4()?,
-        phnom_penh_arrival()?,
-        phnom_penh_day_2()?,
     ];
+    site.append(&mut atw()?);
 
     for page in site {
-        let mut writer = page.0.open()?;
+        let mut writer = match page.0.open()  {
+            Ok(v) => v,
+            Err(e) => {
+                println!("Failure opening page: {}, path: {}", page.0.name, page.0.path);
+                return Err(e);
+            }
+        };
+
         for element in page.1 {
             element.htmlize(&page.0, &mut writer)?;
         }

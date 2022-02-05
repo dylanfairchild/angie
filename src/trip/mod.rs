@@ -93,8 +93,8 @@ fn htmlize_boilerplate_header_and_navigation(
         .into_bytes(),
     )?;
     // "Middle block" - takes care of tricky variable navigation.
-    let name = slice_before_match_from_end_ci(page.name(), ".html");
-    let components = path_str_to_components(page.path());
+    let name = slice_before_match_from_end_ci(&page.name, ".html");
+    let components = path_str_to_components(&page.path);
     let mut path_to_component = String::new();
     for component in components.iter() {
         // The directories are structured such that every directory has a
@@ -212,7 +212,7 @@ impl TripIndexContent {
 impl Htmlize for TripIndexContent {
     fn htmlize(&self, page: &Page, output: &mut BufWriter<File>) -> Result<(), Box<dyn Error>> {
         for c in self.content.iter() {
-            let link = root() + page.path() + "/" + &c.link;
+            let link = root() + &page.path + "/" + &c.link;
             let image = root() + "from-bucket/" + &c.image;
 
             output.write_all(
@@ -440,7 +440,7 @@ impl Htmlize for LocationContent {
     fn htmlize(&self, page: &Page, output: &mut BufWriter<File>) -> Result<(), Box<dyn Error>> {
         let mut left = true;
         for c in self.content.iter() {
-            let link = root() + page.path() + "/" + &c.link;
+            let link = root() + &page.path + "/" + &c.link;
 
             output.write_all(
                 &format!(
@@ -545,20 +545,37 @@ pub struct TripDayContentSection {
 }
 
 fn ends_with_tag(register: &String, tag: &str) -> bool {
-    if register.len() < tag.len() {
+    // zip returns None when either iterator returns None, so we need to make sure
+    // that we iterate at least over the entire tag.
+    // That just requires that the number of characters in the register is
+    // greater than or equal to the number of the characters in the tag.
+    if register.chars().count() < tag.chars().count() {
         return false;
     }
 
-    let i = register.len() - tag.len();
-
-    if &register[i..] == tag {
-        return true;
+    for c in register.chars().rev().zip(tag.chars().rev()) {
+        if c.0 != c.1 {
+            return false;
+        }
     }
 
-    false
+    true
+    // if register.len() < tag.len() {
+    //     return false;
+    // }
+
+    // let i = register.len() - tag.len();
+
+    // if &register[i..] == tag {
+    //     return true;
+    // }
+
+    // false
 }
 
 pub fn gen_from_bucket_html(path: &str) -> Result<Vec<Box<dyn Htmlize>>, Box<dyn Error>> {
+    const INVALID_TITLE: &str = "INVALID_TITLE";
+
     #[derive(PartialEq)]
     enum ParseMode {
         Title,
@@ -571,7 +588,7 @@ pub fn gen_from_bucket_html(path: &str) -> Result<Vec<Box<dyn Htmlize>>, Box<dyn
     let mut ret: Vec<Box<dyn Htmlize>> = vec![];
 
     let mut mode = ParseMode::Searching;
-    let mut content = TripDayContentSection::new("", vec![]);
+    let mut content = TripDayContentSection::new(INVALID_TITLE, vec![]);
     let file = read_to_string(path)?;
     let mut register = String::new();
     for c in file.chars() {
@@ -594,14 +611,24 @@ pub fn gen_from_bucket_html(path: &str) -> Result<Vec<Box<dyn Htmlize>>, Box<dyn
                 } else if ends_with_tag(&register, "<h3>") {
                     mode = ParseMode::SecTitle;
                     // Push the previous content, if valid.
-                    if content.title != "" {
+                    if content.title != INVALID_TITLE {
                         ret.push(Box::new(content));
                     }
                     content = TripDayContentSection::new("", vec![]);
                 } else if ends_with_tag(&register, "<p>") {
                     mode = ParseMode::Text;
+
+                    // Handle untitled content.
+                    if content.title == INVALID_TITLE {
+                        content.title = "".to_string();
+                    }
                 } else if ends_with_tag(&register, "<img src=\"") {
                     mode = ParseMode::Image;
+                    
+                    // Handle untitled content.
+                    if content.title == INVALID_TITLE {
+                        content.title = "".to_string();
+                    }
                 }
 
                 if mode != ParseMode::Searching {
@@ -644,7 +671,7 @@ pub fn gen_from_bucket_html(path: &str) -> Result<Vec<Box<dyn Htmlize>>, Box<dyn
     }
 
     // After we finished the file, we will usually have a last valid content and a footer to add.
-    if content.title != "" {
+    if content.title != INVALID_TITLE {
         ret.push(Box::new(content));
     }
     ret.push(ftr());
@@ -679,7 +706,7 @@ impl TripDayContentSection {
                 )?;
             }
 
-            let path = root() + "from-bucket/" + page.resource_path() + "/";
+            let path = root() + "from-bucket/" + &page.resource_path + "/";
 
             // Output the image content.
             output.write_all(
@@ -701,7 +728,7 @@ impl TripDayContentSection {
         } else if self.is_video(index) {
             // Output video content.
 
-            let path = root() + "from-bucket/" + page.resource_path() + "/";
+            let path = root() + "from-bucket/" + &page.resource_path + "/";
 
             output.write_all(
                 &format!(
@@ -779,14 +806,16 @@ impl TripDayContentSection {
 impl Htmlize for TripDayContentSection {
     fn htmlize(&self, page: &Page, output: &mut BufWriter<File>) -> Result<(), Box<dyn Error>> {
         // Title
-        output.write_all(
-            &format!(
-                r#"
-            <div class="page-content-header">{}</div>"#,
-                self.title
-            )
-            .into_bytes(),
-        )?;
+        if self.title != "" {
+            output.write_all(
+                &format!(
+                    r#"
+                <div class="page-content-header">{}</div>"#,
+                    self.title
+                )
+                .into_bytes(),
+            )?;
+        }
 
         self.htmlize_content(page, output, 0)?;
 
