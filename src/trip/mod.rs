@@ -545,6 +545,10 @@ pub struct TripDayContentSection {
 }
 
 fn ends_with_tag(register: &String, tag: &str) -> bool {
+    // Make this check case insensitive, some of the old HTML pages had tags with wrong casing.
+    let register = register.to_lowercase();
+    let tag = tag.to_lowercase();
+
     // zip returns None when either iterator returns None, so we need to make sure
     // that we iterate at least over the entire tag.
     // That just requires that the number of characters in the register is
@@ -560,17 +564,6 @@ fn ends_with_tag(register: &String, tag: &str) -> bool {
     }
 
     true
-    // if register.len() < tag.len() {
-    //     return false;
-    // }
-
-    // let i = register.len() - tag.len();
-
-    // if &register[i..] == tag {
-    //     return true;
-    // }
-
-    // false
 }
 
 pub fn gen_from_bucket_html(path: &str) -> Result<Vec<Box<dyn Htmlize>>, Box<dyn Error>> {
@@ -771,7 +764,9 @@ impl TripDayContentSection {
         if content.len() >= 3 {
             let ext: String = content.chars().skip(content.len() - 3).take(3).collect();
             let ext = ext.to_lowercase();
-            return ext == "jpg" || ext == "gif";
+            if ext == "jpg" || ext == "gif" {
+                return true
+            }
         }
 
         if content.len() >= 4 {
