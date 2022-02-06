@@ -1,1 +1,10 @@
 /target
+
+# Ignores everything in from-bucket except for the HTML files:
+# First line: "Ignore everything in from-bucket"
+# Second line: "But don't ignore directories"
+# Third line: "And don't ignore files that end in .html"
+# Credit to https://stackoverflow.com/questions/24677866/git-ignore-all-files-except-one-extension-and-folder-structure
+from-bucket/**/*
+!from-bucket/**/*/
+!from-bucket/**/*.html
