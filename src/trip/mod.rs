@@ -1,4 +1,6 @@
 pub mod atw;
+pub mod gaming;
+pub mod tech;
 
 use std::error::Error;
 use std::fs::{read_to_string, File};

@@ -4,6 +4,8 @@ use std::io::{BufWriter, Write};
 
 mod trip;
 use trip::atw::atw;
+use trip::gaming::gaming;
+use trip::tech::tech;
 
 mod index;
 use index::index;
@@ -137,6 +139,8 @@ fn gen() -> Result<(), Box<dyn Error>> {
         index()?,
     ];
     site.append(&mut atw()?);
+    site.append(&mut gaming()?);
+    site.append(&mut tech()?);
 
     for page in site {
         let mut writer = match page.0.open()  {

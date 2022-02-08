@@ -272,8 +272,8 @@ fn washington_index() -> Result<(Page, Vec<Box<dyn Htmlize>>), Box<dyn Error>> {
                 (
                     "preparation.html",
                     "Preparing for the Trip",
-                    "",
-                    ""
+                    "preparation/steph_stuff_packed.jpg",
+                    "A quick primer on how to get 3 months of stuff into one backpack!"
                 ),
                 (
                     "grandma.html",
