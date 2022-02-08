@@ -19,6 +19,111 @@ html {
   float: right;
 }
 
+/* Index menu card styles. */
+.index-welcome-message {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.index-welcome-message-image {
+  width: 500px;  /* todo: bump back up to 100% when we get a properly sized image, then drop display block & margin auto */
+  display: block;
+  margin: auto;
+  height: 350px;
+
+  border-width: 1px;
+  border-style: solid;
+  border-color: #2b3a57;
+  box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.2);
+}
+
+.index-welcome-message-text-title {
+  color: #2b3a57;
+  text-align: center;
+  font-size: xx-large;
+}
+.index-welcome-message-text {
+  color: #2b3a57;
+  text-align: center;
+  font-size: medium;
+}
+
+.index-menu {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-evenly;
+
+  max-width: 1400px;
+  margin: 0 auto;
+}
+@media only screen and (max-width: 500px) {
+  .index-menu {
+    margin: 0 auto;
+    flex-direction: column;
+    width: 325px;
+    align-items: center;
+  }
+}
+
+/* Card which displays elements in a column. */
+.index-menu-card {
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 4px 8px 0 rgba(0, 0, 0, 0.2);
+  transition: 0.3s;
+  margin: 10px 10px 10px 10px;
+  width: 400px;
+  border-color: #2b3a57;
+  border-style: solid;
+  border-width: 1px;
+}
+/* The card is clickable so we have the shadow reflect that. */
+.index-menu-card:hover {
+  box-shadow: 8px 8px 16px 0 rgba(0, 0, 0, 0.2);
+}
+/* On a smaller screen make sure the card gets smaller too. */
+@media only screen and (max-width: 500px) {
+  .index-menu-card {
+    width: 300px;
+  }
+}
+/* Image for the card, restrict the height. */
+.index-menu-card-image {
+  width: 100%;
+  height: 300px;
+  flex-grow: 1;
+}
+/* When the screen gets small, let the image take its own height
+   since we are restricting to one card per window anyways.
+   Instead, we restrict the width so it fits on the screen. */
+@media only screen and (max-width: 500px) {
+  .index-menu-card-image {
+    min-width: 300px;
+    max-width: 300px;
+    height: unset;
+  }
+}
+
+/* These classes cover the styling of the text elements on the
+   menu cards. */
+.index-menu-text-box {
+  color: #2b3a57;
+  padding-right: 6px;
+  padding-left: 6px;
+  flex-grow: 0;
+}
+.index-menu-title {
+  text-align: left;
+  font-size: xx-large;
+}
+.index-menu-subtitle {
+  text-align: right;
+  font-size: medium;
+}
+
+
 /* World menu card styles. */
 .world-menu {
   display: flex;

@@ -4,6 +4,9 @@ use std::io::{BufWriter, Write};
 
 mod trip;
 use trip::atw::atw;
+
+mod index;
+use index::index;
 // use trip::cambodia::{
 //     cambodia, phnom_penh_arrival, phnom_penh_day_2, siem_reap_arrival, siem_reap_day_2,
 //     siem_reap_day_3, siem_reap_day_4,
@@ -127,10 +130,6 @@ trait Htmlize {
     // for why this doesn't take &impl Write and suggestions about how to make it work if it ever matters.
     //fn htmlize(&self, config: &PageConfig, output: &impl Write) -> Result<(), Box<dyn Error>>;
     fn htmlize(&self, config: &Page, output: &mut BufWriter<File>) -> Result<(), Box<dyn Error>>;
-}
-
-fn index() -> Result<(Page, Vec<Box<dyn Htmlize>>), Box<dyn Error>> {
-    Ok((Page::new("index.html", "."), vec![]))
 }
 
 fn gen() -> Result<(), Box<dyn Error>> {
