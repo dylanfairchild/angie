@@ -766,7 +766,7 @@ impl TripDayContentSection {
         if content.len() >= 3 {
             let ext: String = content.chars().skip(content.len() - 3).take(3).collect();
             let ext = ext.to_lowercase();
-            if ext == "jpg" || ext == "gif" {
+            if ext == "jpg" || ext == "gif" || ext == "png" {
                 return true
             }
         }
