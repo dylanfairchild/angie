@@ -87,7 +87,8 @@ impl Page {
 // For running via cargo run and debugging on the local filesystem, this is fine.
 // When we need to put this into production the root should be changed.
 pub fn root() -> String {
-    std::env::var("CARGO_MANIFEST_DIR").unwrap() + "/"
+    // std::env::var("CARGO_MANIFEST_DIR").unwrap() + "/"
+    "/".to_string()
 }
 
 // impl Page {
