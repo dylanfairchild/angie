@@ -1,0 +1,41 @@
+There are some problems with the design:
+1. Need to specify links / names of HTML pages; too much relationship between pages needs to be hard coded
+    --> Also applies to image paths, etc.; the data should just be structured such that this is obvious
+2. Navigation generation should be brought up a level so index page can use it
+3. Organization of some re-usable components under Trip is awkward because now Tech/Gaming are under Trip
+
+One thought to fix this up is to find a structure such that the page data is separate from the
+Htmlize functionality.
+
+The reason I didn't do this in the first place is because we want to be able to reference "back up"
+the chain from our current location (e.g. check a parent page data) which Rust makes difficult
+because it requires a reference to the parent (and then lifetimes got difficult to specify).
+
+The other thing that is nice about Htmlize trait is that how a given type of component gets put into
+HTML is organized along with the data in that component. That doesn't feel "wrong", except for that
+some pieces are overly repeated.
+
+What about this:
+Enum Component
+    --> Contains any component we would want
+
+Website is a big vector of them, but the vector has a tree structure within:
+    --> Page --> all components on it --> Page (subpage of previous)
+Need some way to have pages on equal level though, so we need a proper tree in some way
+    --> e.g. component for page has a depth
+
+Htmlization methods are defined on the Enum so we can still run through and just htmlize everything
+    --> adding a new component is adding it to enum & adding new htmlize method (or other)
+    --> Not every component needs to be htmlizeable, some could be like current Page structure
+    --> htmlize method gets a reference to the vector and your position, so you can walk back up the
+        vector to determine what page you are on, what its parents are, etc. if you need it
+    --> could optimize some of the walk-backs by inserting metadata components (like page) at other
+        locations, which do the search once during their htmlize (OR we introduce some
+        other methods like init and the walk-through is calling init then htmlize, OR we just rename
+        htmlize to "do your thing")
+    --> composition of components will be more straightforward, but we need to work out a way to not
+        make that too verbose; at a certain point the composable pieces will get so small its silly
+        to not write the HTML
+            --> maybe for input still can have helper functions that just turn it all into vec of
+                string as input
+    --> could assign style for components if desired
